@@ -20,6 +20,7 @@ async function main() {
   const loginButton = document.getElementById("login-btn") as HTMLButtonElement;
   const authSection = document.getElementById("auth-section") as HTMLDivElement;
   const mapDiv = document.getElementById("map") as HTMLDivElement;
+  const loadingDiv = document.getElementById("loading") as HTMLDivElement;
 
   // TODO nothing is render by default, hide and show per the flow
   if (!token) {
@@ -31,6 +32,11 @@ async function main() {
     return; // Do not try to load map
   } else {
     // ✅ Token exists → fetch activities and render map
+    // TODO refactor spinner into a function
+    authSection.style.display = "none";
+    loadingDiv.style.display = "block";  // Show spinner
+    mapDiv.style.display = "none";       // Ensure hidden while loading
+
     // TODO refactor these flow into functions
     console.log("Token exists!");
     authSection.style.display = "none";
@@ -40,6 +46,8 @@ async function main() {
     const map = await initializeMap();
     
     renderMap(map, activities);
+    loadingDiv.style.display = "none";   // Hide spinner
+    mapDiv.style.display = "block";      // Show map
   }
 }
 
