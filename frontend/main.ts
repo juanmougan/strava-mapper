@@ -7,27 +7,37 @@ function getTokenFromUrl(): string | null {
 }
 
 async function main() {
-  console.log("Running in browser:", typeof window !== 'undefined');
 
   const tokenFromUrl = getTokenFromUrl();
   if (tokenFromUrl) {
     localStorage.setItem("strava_token", tokenFromUrl);
-    // Optionally clean the URL
     window.history.replaceState({}, document.title, "/");
-    console.log("I've got the token", tokenFromUrl, " so maybe redirect here to getActivities?")
-  } else {
-    // TODO this makes the button superflous, so remove this redirect maybe?
-    console.log("I guess I need to redirect! Since I don't have any token yet")
-    window.location.href = "http://localhost:3000/auth/redirect";
-    return;
+    console.log("✅ Stored token from URL");
   }
 
-  // ✅ Token exists → fetch activities and render map
-  const activities = await fetchActivities();
-  
-  const map = await initializeMap();
-  
-  renderMap(map, activities);
+  const token = localStorage.getItem("strava_token");
+
+  const loginButton = document.getElementById("login-btn") as HTMLButtonElement;
+
+  if (!token) {
+    console.log("No token yet! Need to authenticate on Strava");
+    loginButton.style.display = "inline-block";
+    loginButton.onclick = () => {
+      window.location.href = "http://localhost:3000/auth/redirect";
+    };
+    return; // Do not try to load map
+  } else {
+    // ✅ Token exists → fetch activities and render map
+    // TODO refactor these flow into functions
+    console.log("Token exists!");
+    const authSection = document.getElementById("auth-section") as HTMLDivElement;
+    authSection.style.display = "none";
+    const activities = await fetchActivities();
+    
+    const map = await initializeMap();
+    
+    renderMap(map, activities);
+  }
 }
 
 async function fetchActivities() {

@@ -21,7 +21,6 @@ app.get('/auth/redirect', (_req, res) => {
     client_id: CLIENT_ID,
     response_type: 'code',
     redirect_uri: 'http://localhost:3000/auth/callback',
-    // redirect_uri: 'http://localhost:5173/auth/callback',
     scope: 'read,activity:read_all',
     approval_prompt: 'auto',
   });
