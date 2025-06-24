@@ -18,10 +18,13 @@ async function main() {
   const token = localStorage.getItem("strava_token");
 
   const loginButton = document.getElementById("login-btn") as HTMLButtonElement;
+  const authSection = document.getElementById("auth-section") as HTMLDivElement;
+  const mapDiv = document.getElementById("map") as HTMLDivElement;
 
+  // TODO nothing is render by default, hide and show per the flow
   if (!token) {
     console.log("No token yet! Need to authenticate on Strava");
-    loginButton.style.display = "inline-block";
+    authSection.style.display = "inline-block";
     loginButton.onclick = () => {
       window.location.href = "http://localhost:3000/auth/redirect";
     };
@@ -30,8 +33,8 @@ async function main() {
     // ✅ Token exists → fetch activities and render map
     // TODO refactor these flow into functions
     console.log("Token exists!");
-    const authSection = document.getElementById("auth-section") as HTMLDivElement;
     authSection.style.display = "none";
+    mapDiv.style.display = "block";
     const activities = await fetchActivities();
     
     const map = await initializeMap();
@@ -42,6 +45,7 @@ async function main() {
 
 async function fetchActivities() {
   const token = localStorage.getItem("strava_token");
+  console.log("Got token in the fetchActivities() function: ", token)
   const res = await fetch(`http://localhost:3000/activities?token=${token}`);
   return await res.json();
 }
