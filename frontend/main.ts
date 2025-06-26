@@ -1,54 +1,16 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import Alpine from 'alpinejs';
+
+declare global {
+  interface Window {
+    stravaApp: () => any;
+  }
+}
 
 function getTokenFromUrl(): string | null {
   const url = new URL(window.location.href);
   return url.searchParams.get("token");
-}
-
-async function main() {
-
-  const tokenFromUrl = getTokenFromUrl();
-  if (tokenFromUrl) {
-    localStorage.setItem("strava_token", tokenFromUrl);
-    window.history.replaceState({}, document.title, "/");
-    console.log("✅ Stored token from URL");
-  }
-
-  const token = localStorage.getItem("strava_token");
-
-  const loginButton = document.getElementById("login-btn") as HTMLButtonElement;
-  const authSection = document.getElementById("auth-section") as HTMLDivElement;
-  const mapDiv = document.getElementById("map") as HTMLDivElement;
-  const loadingDiv = document.getElementById("loading") as HTMLDivElement;
-
-  // TODO nothing is render by default, hide and show per the flow
-  if (!token) {
-    console.log("No token yet! Need to authenticate on Strava");
-    authSection.style.display = "inline-block";
-    loginButton.onclick = () => {
-      window.location.href = "http://localhost:3000/auth/redirect";
-    };
-    return; // Do not try to load map
-  } else {
-    // ✅ Token exists → fetch activities and render map
-    // TODO refactor spinner into a function
-    authSection.style.display = "none";
-    loadingDiv.style.display = "block";  // Show spinner
-    mapDiv.style.display = "none";       // Ensure hidden while loading
-
-    // TODO refactor these flow into functions
-    console.log("Token exists!");
-    authSection.style.display = "none";
-    mapDiv.style.display = "block";
-    const activities = await fetchActivities();
-    
-    const map = await initializeMap();
-    
-    renderMap(map, activities);
-    loadingDiv.style.display = "none";   // Hide spinner
-    mapDiv.style.display = "block";      // Show map
-  }
 }
 
 async function fetchActivities() {
@@ -59,13 +21,22 @@ async function fetchActivities() {
 }
 
 async function initializeMap() {
-  const map = L.map('map').setView([0, 0], 2);
+  const map = L.map('map').setView([0, 0], 13);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
   return map;
 }
 
+function getCentroid(coords: [number, number][]): [number, number] {
+  const total = coords.length;
+  const sum = coords.reduce(
+    ([sumLat, sumLng], [lat, lng]) => [sumLat + lat, sumLng + lng],
+    [0, 0]
+  );
+  return [sum[0] / total, sum[1] / total];
+}
+
 async function renderMap(map: any, activities: any) {
-  const allCoords = [];
+  const allCoords: [number, number][] = [];
 
   for (const act of activities) {
     const latlngs = act.polyline.map(([lat, lng]: [number, number]) => [lat, lng]);
@@ -73,7 +44,52 @@ async function renderMap(map: any, activities: any) {
     allCoords.push(...latlngs);
   }
 
-  if (allCoords.length > 0) map.fitBounds(allCoords);
+  if (allCoords.length > 0) {
+    const center = getCentroid(allCoords);
+    map.setView(center, 8); // 🔍 Center around average of all - 8 is a reasonable zoom
+  }
 }
 
-main();
+window.stravaApp = function () {
+  return {
+    isLoggedIn: false,
+    isLoading: false,
+
+    async init() {
+      const tokenFromUrl = getTokenFromUrl();
+      if (tokenFromUrl) {
+        localStorage.setItem("strava_token", tokenFromUrl);
+        window.history.replaceState({}, document.title, "/");
+        console.log("✅ Stored token from URL", tokenFromUrl);
+      }
+
+      const token = localStorage.getItem("strava_token");
+      this.isLoggedIn = !!token;
+
+      if (this.isLoggedIn) {
+        this.isLoading = true;
+
+        // 👇 make map container visible first
+        this.$nextTick(async () => {
+          const activities = await fetchActivities();
+          const map = await initializeMap();
+
+          document.getElementById("map")!.style.display = "block";
+          setTimeout(() => {
+            map.invalidateSize(); // ✅ Force Leaflet to recalculate dimensions
+          }, 100); // give the browser time to paint layout
+
+
+          renderMap(map, activities);
+          this.isLoading = false;
+        });
+      }
+    },
+
+    redirectToStrava() {
+      window.location.href = "http://localhost:3000/auth/redirect";
+    }
+  };
+};
+
+Alpine.start();

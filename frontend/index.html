@@ -2,7 +2,9 @@
 <html>
 <head>
   <title>Strava Mapper</title>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs" defer></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -13,7 +15,6 @@
     #map {
       height: 80vh;
       width: 100%;
-      display: none; /* Initially hidden */
     }
     #auth-section {
       margin-top: 2rem;
@@ -26,21 +27,22 @@
     }
   </style>
 </head>
-<body>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <h1>Strava Mapper</h1>
-  <div id="auth-section" style="display: none;">
+<body x-data="stravaApp()">
+  <header>
+    <h1>Strava Mapper</h1>
+  </header>
+  <div x-show="!isLoggedIn" id="auth-section">
     <p>To view your cycling activities on the map, log in with your Strava account. You'll be redirected back here after authorization.</p>
-    <button id="login-btn">Connect with Strava</button>
+    <button @click="redirectToStrava">Connect with Strava</button>
   </div>
-  <div id="map" style="display: none;"></div>
-  <div id="loading" style="display: none; margin-top: 2rem;">
-  <svg width="40" height="40" viewBox="0 0 40 40">
-    <circle cx="20" cy="20" r="18" stroke="gray" stroke-width="4" fill="none" stroke-dasharray="90" stroke-linecap="round">
-      <animateTransform attributeName="transform" type="rotate" values="0 20 20;360 20 20" dur="1s" repeatCount="indefinite"/>
-    </circle>
-  </svg>
-</div>
+  <div id="map" x-show="isLoggedIn && !isLoading"></div>
+  <div id="loading" x-show="isLoading">
+    <svg width="40" height="40" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" stroke="gray" stroke-width="4" fill="none" stroke-dasharray="90" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="rotate" values="0 20 20;360 20 20" dur="1s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  </div>
   <script type="module" src="./main.ts"></script>
 </body>
 </html>
