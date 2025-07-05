@@ -10,7 +10,7 @@ const app = express();
 app.use(cors());
 
 const PORT = 3000;
-const REFRESH_TOKEN = process.env.STRAVA_REFRESH_TOKEN!;
+const REFRESH_TOKEN = process.env.STRAVA_REFRESH_TOKEN!;    // TODO do I need this?
 const CLIENT_ID = process.env.STRAVA_CLIENT_ID!;
 const CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET!;
 
@@ -65,8 +65,10 @@ app.get('/activities', async (req: Request, res: Response): Promise<void> => {
     }));
     res.json(simplified);
   } catch (e: any) {
-    console.error(e.response?.data || e.message);
-    res.status(500).send('Failed to fetch activities');
+    const isUnauthorized = e.response?.status === 401;
+    const message = e.response?.data || e.message;
+    console.error("❌ Failed to get activities:", message);
+    res.status(isUnauthorized ? 401 : 500).json({ error: message });
   }
 });
 

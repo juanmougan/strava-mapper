@@ -15,8 +15,16 @@ function getTokenFromUrl(): string | null {
 
 async function fetchActivities() {
   const token = localStorage.getItem("strava_token");
-  console.log("Got token in the fetchActivities() function: ", token)
   const res = await fetch(`http://localhost:3000/activities?token=${token}`);
+
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 400) {
+      localStorage.removeItem("strava_token"); // 🔥 clear invalid token
+      window.location.reload(); // 🔄 restart the login flow
+    }
+    throw new Error(`Failed to fetch activities: ${res.status}`);
+  }
+  
   return await res.json();
 }
 
