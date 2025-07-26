@@ -7,7 +7,7 @@ export interface StravaActivity {
   map: { summary_polyline: string | null };
 }
 
-export async function getCyclingActivities(accessToken: string): Promise<StravaActivity[]> {
+export async function getActivities(accessToken: string): Promise<StravaActivity[]> {
   const all: StravaActivity[] = [];
   let page = 1;
 
