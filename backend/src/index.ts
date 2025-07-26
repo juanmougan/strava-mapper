@@ -2,9 +2,12 @@ import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
 import { Request, Response } from 'express';
-import { getCyclingActivities } from './getActivities.js';
+import { getActivities } from './getActivities.js';
 import { decodePolyline } from './decodePolyline.js';
 import 'dotenv/config';
+// Serve frontend static files
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(cors());
@@ -45,7 +48,7 @@ app.get('/auth/callback', async (req, res) => {
     console.log(`New token for ${athlete.username}:`, access_token);
 
     // Redirect to frontend with token as query param (or better: use cookies/session)
-    res.redirect(`http://localhost:5173/?token=${access_token}`);
+    res.redirect(`/?token=${access_token}`);
   } catch (e: any) {
     console.error(e.response?.data || e.message);
     res.status(500).send('OAuth failed');
@@ -57,7 +60,7 @@ app.get('/activities', async (req: Request, res: Response): Promise<void> => {
   if (!token) res.status(400).send('Missing token');
 
   try {
-    const activities = await getCyclingActivities(token);
+    const activities = await getActivities(token);
     const simplified = activities.map(a => ({
       id: a.id,
       name: a.name,
@@ -72,5 +75,13 @@ app.get('/activities', async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// Only needed in ESM
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// For any other route not handled above, serve index.html
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
 
 app.listen(PORT, () => console.log(`Backend running on http://localhost:${PORT}`));

@@ -8,7 +8,7 @@ vi.mock('@mapbox/polyline', () => ({
 }));
 
 import polyline from '@mapbox/polyline';
-import { decodePolyline } from './decodePolyline';
+import { decodePolyline } from './decodePolyline.js';
 
 describe('decodePolyline', () => {
   it('calls polyline.decode with the provided encoded string', () => {
