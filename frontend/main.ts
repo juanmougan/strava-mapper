@@ -46,9 +46,18 @@ function getCentroid(coords: [number, number][]): [number, number] {
 async function renderMap(map: any, activities: any) {
   const allCoords: [number, number][] = [];
 
-  for (const act of activities) {
+  for (let i = 0; i < activities.length; i++) {
+    const act = activities[i];
     const latlngs = act.polyline.map(([lat, lng]: [number, number]) => [lat, lng]);
-    L.polyline(latlngs, { color: 'blue', weight: 2 }).addTo(map);
+
+    // Last activity gets a red, thicker polyline
+    const isLast = i === activities.length - 1;
+    const color = isLast ? 'red' : 'blue';
+    const weight = isLast ? 4 : 2; // thicker for most recent
+
+    L.polyline(latlngs, { color, weight }).addTo(map);
+
+    L.polyline(latlngs, { color, weight: 2 }).addTo(map);
     allCoords.push(...latlngs);
   }
 
