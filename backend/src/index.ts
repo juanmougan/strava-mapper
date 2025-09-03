@@ -64,6 +64,7 @@ app.get('/activities', async (req: Request, res: Response): Promise<void> => {
     const simplified = activities.map(a => ({
       id: a.id,
       name: a.name,
+      start_date_local: a.start_date_local,
       polyline: decodePolyline(a.map.summary_polyline!)
     }));
     res.json(simplified);

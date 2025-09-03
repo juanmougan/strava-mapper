@@ -4,6 +4,7 @@ export interface StravaActivity {
   id: number;
   name: string;
   type: string;
+  start_date_local: string;
   map: { summary_polyline: string | null };
 }
 

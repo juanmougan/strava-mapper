@@ -1,6 +1,7 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import Alpine from 'alpinejs';
+import { StravaActivity } from '../backend/src/getActivities'
 
 declare global {
   interface Window {
@@ -13,7 +14,7 @@ function getTokenFromUrl(): string | null {
   return url.searchParams.get("token");
 }
 
-async function fetchActivities() {
+async function fetchActivitiesOldestFirst() {
   const token = localStorage.getItem("strava_token");
   const res = await fetch(`http://localhost:3000/activities?token=${token}`);
 
@@ -25,7 +26,12 @@ async function fetchActivities() {
     throw new Error(`Failed to fetch activities: ${res.status}`);
   }
   
-  return await res.json();
+  let activities = await res.json();
+
+  // Ensure oldest first
+  activities.sort((a: any, b: any) => new Date(a.start_date_local).getTime() - new Date(b.start_date_local).getTime());
+  
+  return activities;
 }
 
 async function initializeMap() {
@@ -50,20 +56,25 @@ async function renderMap(map: any, activities: any) {
     const act = activities[i];
     const latlngs = act.polyline.map(([lat, lng]: [number, number]) => [lat, lng]);
 
-    // Last activity gets a red, thicker polyline
-    const isLast = i === activities.length - 1;
-    const color = isLast ? 'red' : 'blue';
-    const weight = isLast ? 4 : 2; // thicker for most recent
+    const [color, weight] = setColorAndWeight(activities, i);
 
     L.polyline(latlngs, { color, weight }).addTo(map);
 
-    L.polyline(latlngs, { color, weight: 2 }).addTo(map);
     allCoords.push(...latlngs);
   }
 
   if (allCoords.length > 0) {
     const center = getCentroid(allCoords);
     map.setView(center, 8); // 🔍 Center around average of all - 8 is a reasonable zoom
+  } 
+}
+
+function setColorAndWeight(activities: StravaActivity[], i: number) {
+  const isLast = i === activities.length - 1;
+  if (isLast) {
+    return ['red', 4]
+  } else {
+    return ['blue', 2]
   }
 }
 
@@ -88,7 +99,7 @@ window.stravaApp = function () {
 
         // 👇 make map container visible first
         this.$nextTick(async () => {
-          const activities = await fetchActivities();
+          const activitiesOldestFirst = await fetchActivitiesOldestFirst();
           const map = await initializeMap();
 
           document.getElementById("map")!.style.display = "block";
@@ -97,7 +108,7 @@ window.stravaApp = function () {
           }, 100); // give the browser time to paint layout
 
 
-          renderMap(map, activities);
+          renderMap(map, activitiesOldestFirst);
           this.isLoading = false;
         });
       }
