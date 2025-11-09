@@ -1,13 +1,29 @@
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import Alpine from 'alpinejs';
-import { StravaActivity } from '../backend/src/getActivities'
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import Alpine from "alpinejs";
+import { StravaActivity } from "../backend/src/getActivities";
 
 declare global {
   interface Window {
     stravaApp: () => any;
   }
 }
+
+// Environment-aware API configuration
+const getApiBaseUrl = () => {
+  // In development, use localhost
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    return "http://localhost:3000";
+  } else {
+    // In production on GitHub Pages
+    return "https://juanmougan.github.io/";
+  }
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 function getTokenFromUrl(): string | null {
   const url = new URL(window.location.href);
@@ -16,7 +32,7 @@ function getTokenFromUrl(): string | null {
 
 async function fetchActivitiesOldestFirst() {
   const token = localStorage.getItem("strava_token");
-  const res = await fetch(`http://localhost:3000/activities?token=${token}`);
+  const res = await fetch(`${API_BASE_URL}/activities?token=${token}`);
 
   if (!res.ok) {
     if (res.status === 401 || res.status === 400) {
@@ -25,18 +41,22 @@ async function fetchActivitiesOldestFirst() {
     }
     throw new Error(`Failed to fetch activities: ${res.status}`);
   }
-  
+
   let activities = await res.json();
 
   // Ensure oldest first
-  activities.sort((a: any, b: any) => new Date(a.start_date_local).getTime() - new Date(b.start_date_local).getTime());
-  
+  activities.sort(
+    (a: any, b: any) =>
+      new Date(a.start_date_local).getTime() -
+      new Date(b.start_date_local).getTime()
+  );
+
   return activities;
 }
 
 async function initializeMap() {
-  const map = L.map('map').setView([0, 0], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  const map = L.map("map").setView([0, 0], 13);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
   return map;
 }
 
@@ -54,7 +74,10 @@ async function renderMap(map: any, activities: any) {
 
   for (let i = 0; i < activities.length; i++) {
     const act = activities[i];
-    const latlngs = act.polyline.map(([lat, lng]: [number, number]) => [lat, lng]);
+    const latlngs = act.polyline.map(([lat, lng]: [number, number]) => [
+      lat,
+      lng,
+    ]);
 
     const [color, weight] = setColorAndWeight(activities, i);
 
@@ -66,15 +89,15 @@ async function renderMap(map: any, activities: any) {
   if (allCoords.length > 0) {
     const center = getCentroid(allCoords);
     map.setView(center, 8); // 🔍 Center around average of all - 8 is a reasonable zoom
-  } 
+  }
 }
 
 function setColorAndWeight(activities: StravaActivity[], i: number) {
   const isLast = i === activities.length - 1;
   if (isLast) {
-    return ['red', 4]
+    return ["red", 4];
   } else {
-    return ['blue', 2]
+    return ["blue", 2];
   }
 }
 
@@ -107,7 +130,6 @@ window.stravaApp = function () {
             map.invalidateSize(); // ✅ Force Leaflet to recalculate dimensions
           }, 100); // give the browser time to paint layout
 
-
           renderMap(map, activitiesOldestFirst);
           this.isLoading = false;
         });
@@ -115,8 +137,8 @@ window.stravaApp = function () {
     },
 
     redirectToStrava() {
-      window.location.href = "http://localhost:3000/auth/redirect";
-    }
+      window.location.href = `${API_BASE_URL}/auth/redirect`;
+    },
   };
 };
 
